@@ -110,8 +110,14 @@ fn resize(allocator: std.mem.Allocator, img: stb_image.Image) !stb_image.Image {
 fn gaussian(w: usize, h:usize, c: usize, p: []u8, allocator: std.mem.Allocator) ![]u8 {
     const size = w * h * c;
     var gauss: []u8 = try allocator.alloc(u8, size);
-    const sigma: f32 = 2;
-    const K = try kernal(sigma); 
+    const sigma: f32 = 3;
+
+    const k_size = sigma * 6 + 1; 
+    std.debug.print("sigma is {}, ksize is {}\n",.{sigma,k_size});
+    const k_middle: i32 = @ceil((k_size - 1)/2.0);
+    const k_array = try multiArray(allocator, @round(k_size));
+    const K = try kernal(k_array, sigma, k_middle); 
+
     var conv: f32 = undefined;
 
     for (0..h) |y| {
@@ -132,8 +138,8 @@ fn gaussian(w: usize, h:usize, c: usize, p: []u8, allocator: std.mem.Allocator) 
                         const sw: i32 = @intCast(w);
                         const sc: i32 = @intCast(c);
 
-                        const x2: i32 = si - 3;
-                        const y2: i32 = sj - 3;
+                        const x2: i32 = si - k_middle;
+                        const y2: i32 = sj - k_middle;
 
                         const nx: i32 = sx + x2;
                         const ny: i32 = sy + y2;
@@ -163,10 +169,46 @@ fn gaussian(w: usize, h:usize, c: usize, p: []u8, allocator: std.mem.Allocator) 
 
         }
     }
-    for (0..20) |i| {
+    for (0..3) |i| {
         std.debug.print("in[{}]={} out = {}\n",.{i, p[i],gauss[i]});
     }
     return gauss;
+}
+fn kernal(K: [][]f32, sigma: f32, m: i32) ![][]f32 {
+    
+    var constraint: f32 = 0.0;
+    for (K, 0..) |row, i| {
+        for (row, 0..) |_, j| {
+            const x: i32 = @intCast(i);
+            const y: i32 = @intCast(j);
+            const nx: i32 = x - m;
+            const ny: i32 = y - m;
+            const r2: f32 = @floatFromInt(nx * nx + ny * ny);
+            const sigma2 = sigma * sigma;
+            const pvalue = 1/(2.0 * std.math.pi * sigma2) * std.math.exp(-r2 / (2.0 * sigma2));
+
+            K[i][j] = pvalue;
+            constraint += pvalue;
+            //std.debug.print("row is {}\n",.{row});
+           // std.debug.print("pvalue is {}\n",.{pvalue});
+        }
+    }
+    for (K, 0..) |row, i| {
+        for (row, 0..) |value, j| {
+            K[i][j] = value / constraint;
+            //std.debug.print("v/c = {}\n",.{value/constraint});
+        }
+    }
+    
+return K;
+
+}
+fn multiArray(allocator: std.mem.Allocator, size: usize) ![][]f32 {
+    const out = try allocator.alloc([]f32, size);
+    for (out) |*row| {
+        row.* = try allocator.alloc(f32, size);
+    }
+    return out;
 }
 fn luminize(w: usize, h: usize, c: usize, p: []u8, allocator: std.mem.Allocator) ![]u8 {
     const pc = w * h * c;
@@ -191,34 +233,6 @@ fn luminize(w: usize, h: usize, c: usize, p: []u8, allocator: std.mem.Allocator)
         }
     }
     return luminized;
-}
-fn kernal(sigma: f32) ![7][7]f32 {
-    
-    var K: [7][7]f32 = undefined;
-    var constraint: f32 = undefined;
-    for (K, 0..) |row, i| {
-        for (row, 0..) |_, j| {
-            const x: i32 = @intCast(i);
-            const y: i32 = @intCast(j);
-            const nx: i32 = x - 3;
-            const ny: i32 = y - 3;
-            const pvalue = 1/(2 * std.math.pi * sigma * sigma) * std.math.exp(-(std.math.pow(f32,@floatFromInt(nx),2) + std.math.pow(f32,@floatFromInt(ny),2))/2 * sigma);
-
-            K[i][j] = pvalue;
-            constraint += pvalue;
-            //std.debug.print("row is {}\n",.{row});
-            std.debug.print("pvalue is {}\n",.{pvalue});
-        }
-    }
-    for (K, 0..) |row, i| {
-        for (row, 0..) |value, j| {
-            K[i][j] = value / constraint;
-            std.debug.print("v/c = {}\n",.{value/constraint});
-        }
-    }
-    
-return K;
-
 }
 fn srgbize(c: f32) f32 {
     if (c <= 0.0031308) {
