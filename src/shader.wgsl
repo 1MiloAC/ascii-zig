@@ -1,5 +1,5 @@
 @group(0) @binding(0) var input_buffer: texture_2d<f32>;
-@group(0) @binding(1) var text_store_w: texture_storage_2d<rgba8unorm, write>;
+@group(0) @binding(1) var text_store_w: texture_storage_2d<rgba8unorm, read_write>;
 @group(0) @binding(2) var text_store_r: texture_2d<f32>;
 @group(0) @binding(3) var text2_w: texture_storage_2d<rgba8unorm, write>;
 @group(0) @binding(4) var text2_r: texture_2d<f32>;

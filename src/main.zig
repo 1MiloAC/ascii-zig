@@ -85,7 +85,7 @@ pub fn main() !void {
                     },
                 },
                 .{ .nextInChain = null, .binding = 1, .visibility = wgpu.WGPUShaderStage_Compute, .storageTexture = .{
-                    .access = wgpu.WGPUStorageTextureAccess_WriteOnly,
+                    .access = wgpu.WGPUStorageTextureAccess_ReadWrite,
                     .format = wgpu.WGPUTextureFormat_RGBA8Unorm,
                     .viewDimension = wgpu.WGPUTextureViewDimension_2D,
                     .nextInChain = null,
@@ -109,7 +109,7 @@ pub fn main() !void {
                     .nextInChain = null,
                 } },
                 .{ .nextInChain = null, .binding = 1, .visibility = wgpu.WGPUShaderStage_Compute, .storageTexture = .{
-                    .access = wgpu.WGPUStorageTextureAccess_WriteOnly,
+                    .access = wgpu.WGPUStorageTextureAccess_ReadWrite,
                     .format = wgpu.WGPUTextureFormat_RGBA8Unorm,
                     .viewDimension = wgpu.WGPUTextureViewDimension_2D,
                     .nextInChain = null,
@@ -153,7 +153,7 @@ pub fn main() !void {
                     .nextInChain = null,
                 } },
                 .{ .nextInChain = null, .binding = 1, .visibility = wgpu.WGPUShaderStage_Compute, .storageTexture = .{
-                    .access = wgpu.WGPUStorageTextureAccess_WriteOnly,
+                    .access = wgpu.WGPUStorageTextureAccess_ReadWrite,
                     .format = wgpu.WGPUTextureFormat_RGBA8Unorm,
                     .viewDimension = wgpu.WGPUTextureViewDimension_2D,
                     .nextInChain = null,
@@ -178,7 +178,7 @@ pub fn main() !void {
                     .nextInChain = null,
                 } },
                 .{ .nextInChain = null, .binding = 1, .visibility = wgpu.WGPUShaderStage_Compute, .storageTexture = .{
-                    .access = wgpu.WGPUStorageTextureAccess_WriteOnly,
+                    .access = wgpu.WGPUStorageTextureAccess_ReadWrite,
                     .format = wgpu.WGPUTextureFormat_RGBA8Unorm,
                     .viewDimension = wgpu.WGPUTextureViewDimension_2D,
                     .nextInChain = null,
@@ -584,6 +584,9 @@ fn createShadderModule(device: ?*wgpu.struct_WGPUDeviceImpl) ?*wgpu.struct_WGPUS
     return module;
 }
 fn wgpuInit() void {
+    const required_features = [_]wgpu.WGPUFeatureName{
+        wgpu.WGPUNativeFeature_TextureAdapterSpecificFormatFeatures,
+    };
     const options: wgpu.WGPURequestAdapterOptions = .{
         .powerPreference = wgpu.WGPUPowerPreference_HighPerformance,
         .compatibleSurface = null,
@@ -597,7 +600,8 @@ fn wgpuInit() void {
     };
     const device_desc: wgpu.WGPUDeviceDescriptor = .{
         .nextInChain = null,
-        .requiredFeatureCount = 0,
+        .requiredFeatures = &required_features,
+        .requiredFeatureCount = required_features.len,
         .requiredLimits = null,
         .defaultQueue = .{
             .nextInChain = null,
@@ -627,6 +631,9 @@ fn wgpuInit() void {
         state.cond.wait(&state.mutex);
     }
     state.mutex.unlock();
+
+
+
     std.debug.print("Adapter received {any}\n", .{state.adapter});
 
     //Request Device
